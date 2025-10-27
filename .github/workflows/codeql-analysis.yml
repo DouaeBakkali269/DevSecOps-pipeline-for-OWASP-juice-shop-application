@@ -1,4 +1,4 @@
-name: "CodeQL Scan"
+name: "CodeQL Scan with HTML Report"
 
 on:
   push:
@@ -27,27 +27,35 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-          queries: security-extended
+          queries: security-extended,security-and-quality
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
-        id: codeql
         with:
-          output: ./codeql-results
+          output: codeql-results
+          upload-database: true
 
-      - name: Convert SARIF to HTML report (Python)
-        if: always()
+      - name: Generate HTML Report
         run: |
-          pip install sarif-tools
           mkdir -p codeql-report
-          sarif-tools html ./codeql-results/javascript-typescript.sarif > codeql-report/index.html
+          # Installer CodeQL CLI pour générer le rapport
+          curl -L https://github.com/github/codeql-cli-binaries/releases/download/v2.14.6/codeql-linux64.zip -o codeql.zip
+          unzip codeql.zip
+          ./codeql/codeql database analyze codeql-results/javascript-typescript \
+            --format=sarif-latest \
+            --output=codeql-results/results.sarif \
+            --severity=error,warning,recommendation
+          
+          # Convertir SARIF en HTML (nécessite un outil supplémentaire)
+          npm install -g @microsoft/sarif-viewer
+          npx sarif-to-html codeql-results/results.sarif codeql-report/index.html
 
-      - name: Upload CodeQL HTML report
-        if: always()
+      - name: Upload HTML Report
         uses: actions/upload-artifact@v4
         with:
           name: codeql-html-report
-          path: codeql-report
+          path: codeql-report/
+          retention-days: 30
