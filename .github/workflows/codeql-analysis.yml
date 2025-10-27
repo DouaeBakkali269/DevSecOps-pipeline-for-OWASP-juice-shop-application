@@ -13,7 +13,6 @@ jobs:
       actions: read
       contents: read
       security-events: write
-
     strategy:
       fail-fast: false
       matrix:
@@ -38,17 +37,15 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
         id: codeql
+        with:
+          output: ./codeql-results
 
-      # ✅ Generate HTML report from SARIF
-      - name: Generate HTML report
+      - name: Generate HTML report from SARIF
         if: always()
         run: |
+          npm install -g sarif-html
           mkdir -p codeql-report
-          # Find the generated SARIF file dynamically
-          SARIF_FILE=$(find . -name '*.sarif' | head -n 1)
-          echo "Found SARIF file: $SARIF_FILE"
-          npm install -g sarif-to-html
-          sarif-to-html --input "$SARIF_FILE" --output codeql-report/index.html
+          npx sarif-html --output codeql-report/index.html ./codeql-results/javascript-typescript.sarif
 
       - name: Upload CodeQL HTML report
         if: always()
