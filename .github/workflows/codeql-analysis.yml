@@ -13,6 +13,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
+
     strategy:
       fail-fast: false
       matrix:
@@ -27,9 +28,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
-          config: |
-            paths-ignore:
-              - 'data/static/codefixes'
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v4
@@ -40,14 +38,12 @@ jobs:
         with:
           output: ./codeql-results
 
-      - name: Generate HTML report from SARIF
+      - name: Convert SARIF to HTML report (Python)
         if: always()
         run: |
-          npm install -g @microsoft/sarif-to-html
+          pip install sarif-tools
           mkdir -p codeql-report
-          npx @microsoft/sarif-to-html \
-            --output codeql-report/index.html \
-            ./codeql-results/javascript-typescript.sarif
+          sarif-tools html ./codeql-results/javascript-typescript.sarif > codeql-report/index.html
 
       - name: Upload CodeQL HTML report
         if: always()
