@@ -1,4 +1,4 @@
-name: "CodeQL Scan with HTML Report"
+name: "CodeQL Simplified Scan"
 
 on:
   push:
@@ -14,11 +14,6 @@ jobs:
       contents: read
       security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'javascript-typescript' ]
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,36 +21,47 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: ${{ matrix.language }}
+          languages: [ 'javascript-typescript' ]
           queries: security-extended,security-and-quality
 
-      - name: Autobuild
+      - name: Build CodeQL Database
         uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
         with:
-          output: codeql-results
-          upload-database: true
+          output: sarif-results
 
-      - name: Generate HTML Report
+      - name: Setup Node.js for report generation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Generate HTML Report from SARIF
         run: |
-          mkdir -p codeql-report
-          # Installer CodeQL CLI pour générer le rapport
-          curl -L https://github.com/github/codeql-cli-binaries/releases/download/v2.14.6/codeql-linux64.zip -o codeql.zip
-          unzip codeql.zip
-          ./codeql/codeql database analyze codeql-results/javascript-typescript \
-            --format=sarif-latest \
-            --output=codeql-results/results.sarif \
-            --severity=error,warning,recommendation
+          # Installer le convertisseur
+          npm install -g @microsoft/sarif-to-html
           
-          # Convertir SARIF en HTML (nécessite un outil supplémentaire)
-          npm install -g @microsoft/sarif-viewer
-          npx sarif-to-html codeql-results/results.sarif codeql-report/index.html
+          # Créer le dossier de rapport
+          mkdir -p html-report
+          
+          # Chercher le fichier SARIF généré
+          SARIF_FILE=$(find sarif-results -name "*.sarif" | head -1)
+          
+          if [ -n "$SARIF_FILE" ]; then
+            echo "📊 Conversion du fichier SARIF: $SARIF_FILE"
+            sarif-to-html "$SARIF_FILE" html-report/codeql-report.html
+            echo "✅ Rapport HTML généré: html-report/codeql-report.html"
+          else
+            echo "⚠️ Aucun fichier SARIF trouvé dans sarif-results/"
+            # Lister le contenu pour debug
+            ls -la sarif-results/
+            exit 1
+          fi
 
       - name: Upload HTML Report
         uses: actions/upload-artifact@v4
         with:
           name: codeql-html-report
-          path: codeql-report/
+          path: html-report/
           retention-days: 30
