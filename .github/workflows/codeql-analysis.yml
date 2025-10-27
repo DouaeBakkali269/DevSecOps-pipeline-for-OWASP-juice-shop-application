@@ -3,8 +3,7 @@ name: "CodeQL Scan"
 on:
   push:
   pull_request:
-  workflow_dispatch:                # 👈 allows manual run from GitHub UI
-
+  workflow_dispatch:
 
 jobs:
   analyze:
@@ -14,39 +13,46 @@ jobs:
       actions: read
       contents: read
       security-events: write
+
     strategy:
       fail-fast: false
       matrix:
         language: [ 'javascript-typescript' ]
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v4
-      with:
-        languages: ${{ matrix.language }}
-        queries: security-extended
-        config: |
-          paths-ignore:
-            - 'data/static/codefixes'
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - 'data/static/codefixes'
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v4
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v4
-      id: codeql
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        id: codeql
 
-    - name: Generate HTML report
-      if: always()
-      run: |
-        mkdir -p codeql-report
-        npx @microsoft/sarif2html ${GITHUB_WORKSPACE}/codeql-results.sarif -o codeql-report/index.html
+      # ✅ Generate HTML report from SARIF
+      - name: Generate HTML report
+        if: always()
+        run: |
+          mkdir -p codeql-report
+          # Find the generated SARIF file dynamically
+          SARIF_FILE=$(find . -name '*.sarif' | head -n 1)
+          echo "Found SARIF file: $SARIF_FILE"
+          npm install -g sarif-to-html
+          sarif-to-html --input "$SARIF_FILE" --output codeql-report/index.html
 
-    - name: Upload CodeQL HTML report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: codeql-html-report
-        path: codeql-report
+      - name: Upload CodeQL HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-html-report
+          path: codeql-report
