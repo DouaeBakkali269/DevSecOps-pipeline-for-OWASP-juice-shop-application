@@ -18,7 +18,8 @@ jobs:
         language: [ 'javascript-typescript' ]
     steps:
     - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+      uses: actions/checkout@v3
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
@@ -27,7 +28,23 @@ jobs:
         config: |
           paths-ignore:
             - 'data/static/codefixes'
+
     - name: Autobuild
       uses: github/codeql-action/autobuild@v3
+
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
+      id: codeql
+
+    - name: Generate HTML report
+      if: always()
+      run: |
+        mkdir -p codeql-report
+        npx @microsoft/sarif2html ${GITHUB_WORKSPACE}/codeql-results.sarif -o codeql-report/index.html
+
+    - name: Upload CodeQL HTML report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: codeql-html-report
+        path: codeql-report
