@@ -43,9 +43,11 @@ jobs:
       - name: Generate HTML report from SARIF
         if: always()
         run: |
-          npm install -g sarif-html
+          npm install -g @microsoft/sarif-to-html
           mkdir -p codeql-report
-          npx sarif-html --output codeql-report/index.html ./codeql-results/javascript-typescript.sarif
+          npx @microsoft/sarif-to-html \
+            --output codeql-report/index.html \
+            ./codeql-results/javascript-typescript.sarif
 
       - name: Upload CodeQL HTML report
         if: always()
