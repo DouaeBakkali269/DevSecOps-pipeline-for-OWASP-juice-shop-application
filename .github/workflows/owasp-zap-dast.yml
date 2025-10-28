@@ -31,7 +31,6 @@ jobs:
         with:
           target: 'http://localhost:3000'
           cmd_options: '-a'
-          artifact_name: 'owasp-zap-report'
           fail_action: false
           token: ''
           allow_issue_writing: false
@@ -40,5 +39,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: owasp-zap-report
-          path: owasp-zap-report.html
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
           if-no-files-found: warn
