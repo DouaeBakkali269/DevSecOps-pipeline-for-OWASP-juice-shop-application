@@ -3,8 +3,7 @@ name: "DAST with OWASP ZAP"
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
+
 
 jobs:
   dast:
