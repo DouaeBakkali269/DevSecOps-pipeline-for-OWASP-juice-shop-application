@@ -25,7 +25,6 @@ jobs:
             curl -sSf http://localhost:3000 && break
             sleep 5
           done
-
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.10.0
         with:
@@ -34,7 +33,7 @@ jobs:
           fail_action: false
           token: ''
           allow_issue_writing: false
-          continue-on-error: true
+        continue-on-error: true
   
 
       - name: Upload ZAP Report
